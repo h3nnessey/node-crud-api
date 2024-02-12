@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import cluster, { type Worker } from 'node:cluster';
 import { availableParallelism } from 'node:os';
 import 'dotenv/config';
@@ -21,7 +21,7 @@ if (!isClusterMode && cluster.isPrimary) {
 }
 
 if (isClusterMode && cluster.isPrimary) {
-  const cpusCount = Number(availableParallelism() - 1);
+  const cpusCount = availableParallelism() - 1;
   const workers: Worker[] = [];
 
   let workerIndex = 0;
@@ -29,40 +29,34 @@ if (isClusterMode && cluster.isPrimary) {
   for (let i = 1; i < cpusCount + 1; i += 1) {
     const worker = cluster.fork({ workerPort: PORT + i });
 
-    worker.on('message', (msg) => console.log(msg));
-
     workers.push(worker);
   }
 
-  const server = createServer((request, response) => {
-    const { method, url } = request;
-
+  const server = createServer((masterRequest, masterResponse) => {
     workerIndex = (workerIndex + 1) % cpusCount;
 
-    response.end(JSON.stringify(workerIndex));
+    const { method, url: path, headers } = masterRequest;
+
+    const requestOptions = { host: 'localhost', port: PORT + workerIndex, path, method, headers };
+
+    masterRequest.pipe(
+      httpRequest(requestOptions, (workerResponse) => {
+        workerResponse.pipe(masterResponse);
+      }),
+    );
   });
 
   server.listen(PORT, () => {
     console.log(`Master process is listening on port: ${PORT}`);
   });
-
-  cluster.on('fork', (worker) => {
-    console.log(`Worker with pid: ${worker.process.pid} is running`);
-  });
 }
 
 if (isClusterMode && cluster.isWorker) {
   const port = Number(process.env.workerPort);
+  const userController = new UserController();
 
-  const server = createServer((request, response) => {
-    const { method, url } = request;
-
-    process.send?.({
-      method,
-      url,
-    });
-
-    response.end(JSON.stringify(port));
+  const server = createServer(async (request, response) => {
+    await userController.handleRequest(request, response);
   });
 
   server.listen(port, () => {
