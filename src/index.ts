@@ -2,7 +2,9 @@ import http from 'node:http';
 import { v4 as uuidv4, validate as validateUuid } from 'uuid';
 import 'dotenv/config';
 import { HttpMethods } from './types';
-import { getIdFromUrl } from './utils/get-id-from-url';
+import { getIdFromUrl } from './utils';
+import { UserService } from './services';
+import { UserController } from './controllers';
 
 const PORT = process.env.PORT || 4000;
 
