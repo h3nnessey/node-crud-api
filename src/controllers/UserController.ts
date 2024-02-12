@@ -1,7 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { UserService } from '../services';
 import { HttpMethods, UserOperation, UserToOperation } from '../types';
-import { SourceIsNotFoundError } from '../utils/errors';
+import { BadRequestError, SourceIsNotFoundError } from '../utils/errors';
 import { sendResponseWithError, sendResponseWithResult } from '../utils/response';
 import { readRequestBody } from '../utils/streams';
 
@@ -14,15 +14,27 @@ export class UserController {
     return id ? this._userService.getUserById(id) : this._userService.getUsers();
   }
 
-  private async POST(_: unknown, request: IncomingMessage): Promise<UserOperation> {
+  private async POST(id: string | null, request: IncomingMessage): Promise<UserOperation> {
+    if (id) throw new BadRequestError();
+
     const user = (await readRequestBody(request)) as UserToOperation;
 
     return this._userService.createUser(user);
   }
 
-  private async PUT() {}
+  private async PUT(id: string | null, request: IncomingMessage): Promise<UserOperation> {
+    if (!id) throw new BadRequestError();
 
-  private async DELETE() {}
+    const user = (await readRequestBody(request)) as UserToOperation;
+
+    return this._userService.updateUser(id, user);
+  }
+
+  private async DELETE(id: string | null) {
+    if (!id) throw new BadRequestError();
+
+    return this._userService.deleteUser(id);
+  }
 
   public async handleRequest(request: IncomingMessage, response: ServerResponse) {
     const { method, url = '' } = request;
@@ -41,7 +53,7 @@ export class UserController {
         const id = this._getIdFromUrl(url);
 
         const result = await this[method](id, request);
-        // @ts-ignore-next-line
+
         return sendResponseWithResult({ response, result });
       }
     } catch (error) {

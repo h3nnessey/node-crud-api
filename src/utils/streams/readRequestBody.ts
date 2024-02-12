@@ -1,5 +1,6 @@
 import type { IncomingMessage } from 'node:http';
 import { InvalidUserJsonError } from '../errors/InvalidUserJsonError';
+import { InternalServerError } from '../errors';
 
 export const readRequestBody = (request: IncomingMessage): Promise<unknown> => {
   return new Promise((resolve, reject) => {
@@ -17,6 +18,10 @@ export const readRequestBody = (request: IncomingMessage): Promise<unknown> => {
       } catch {
         reject(new InvalidUserJsonError());
       }
+    });
+
+    request.on('error', () => {
+      reject(new InternalServerError());
     });
   });
 };

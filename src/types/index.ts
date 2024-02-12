@@ -17,7 +17,7 @@ export interface User {
 export type UserToOperation = Omit<User, 'id'>;
 
 export interface UserOperation {
-  data: User | User[];
+  data: User | User[] | string;
   statusCode: number;
   statusMessage: string;
 }

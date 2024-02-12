@@ -50,6 +50,43 @@ export class UserService {
     };
   }
 
+  async updateUser(id: string, user: UserToOperation): Promise<UserOperation> {
+    this._validateId(id);
+    this._validateUser(user);
+
+    const userIndex = this._users.findIndex((u) => u.id === id);
+
+    if (userIndex !== -1) {
+      const updatedUser = { ...user, id: this._users[userIndex].id };
+
+      return {
+        data: updatedUser,
+        statusCode: 200,
+        statusMessage: 'Updated',
+      };
+    }
+
+    throw new UserNotFoundError();
+  }
+
+  async deleteUser(id: string): Promise<UserOperation> {
+    this._validateId(id);
+
+    const user = this._users.find((user) => user.id === id);
+
+    if (!user) {
+      throw new UserNotFoundError();
+    }
+
+    this._users = this._users.filter((user) => user.id !== id);
+
+    return {
+      data: `User with ID: ${id} has been deleted`,
+      statusCode: 204,
+      statusMessage: 'No Content',
+    };
+  }
+
   private _validateUser(user: UserToOperation) {
     const isValidKeysCount = Object.keys(user).length === 3;
     const isValidAge = 'age' in user && typeof user.age === 'number';
