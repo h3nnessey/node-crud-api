@@ -16,6 +16,11 @@ export interface User {
   hobbies: string[];
 }
 
+export type WorkerMessage =
+  | { type: 'update'; data: User }
+  | { type: 'delete'; data: string }
+  | { type: 'create'; data: User };
+
 export type UserToOperation = Omit<User, 'id'>;
 
 export interface UserOperation {

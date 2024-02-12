@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import cluster from 'node:cluster';
 import type { UserService, WorkerUserService } from '../services';
 import { HttpMethods, UserOperation, UserToOperation } from '../types';
 import { BadRequestError, SourceIsNotFoundError } from '../utils/errors';
@@ -40,7 +41,9 @@ export class UserController {
   public async handleRequest(request: IncomingMessage, response: ServerResponse) {
     const { method, url } = request;
 
-    console.log(`${new Date().toLocaleString()} ${method} ${url}`);
+    console.log(
+      `${cluster.isPrimary ? `Master #${process.pid}` : `Worker pid: ${process.pid}, port: ${process.env.workerPort}`} - ${new Date().toLocaleString()} ${method} ${url}`,
+    );
 
     const isValidRoute = this._isValidRoute(url);
     const isValidMethod = this._isValidMethod(method);
