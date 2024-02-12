@@ -1,26 +1,31 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { validate as validateUuid } from 'uuid';
 import { UserService } from '../services';
-import { HttpMethods, User } from '../types';
-import { sendResponseWith } from '../utils';
+import { HttpMethods, UserOperation, UserToOperation } from '../types';
+import { SourceIsNotFoundError } from '../utils/errors';
+import { sendResponseWithError, sendResponseWithResult } from '../utils/response';
+import { readRequestBody } from '../utils/streams';
 
 export class UserController {
   private readonly _userService = new UserService();
   private readonly _usersRegExp = new RegExp(/^\/api\/users[\/]?$/i);
   private readonly _usersUuidRegexp = new RegExp(/^\/api\/users(?:\/([^\/]+?))[\/]?$/i);
 
-  private async GET(id: string | null): Promise<User | User[]> {
+  private async GET(id: string | null): Promise<UserOperation> {
     return id ? this._userService.getUserById(id) : this._userService.getUsers();
   }
 
-  private async POST() {}
+  private async POST(_: unknown, request: IncomingMessage): Promise<UserOperation> {
+    const user = (await readRequestBody(request)) as UserToOperation;
+
+    return this._userService.createUser(user);
+  }
 
   private async PUT() {}
 
   private async DELETE() {}
 
-  public async handleRequest(req: IncomingMessage, res: ServerResponse) {
-    const { method, url = '' } = req;
+  public async handleRequest(request: IncomingMessage, response: ServerResponse) {
+    const { method, url = '' } = request;
 
     console.log(`${new Date().toLocaleString()} ${method} ${url}`);
 
@@ -28,34 +33,19 @@ export class UserController {
     const isValidMethod = this._isValidMethod(method);
 
     if (!isValidRoute || !isValidMethod) {
-      res.writeHead(404, 'Not found', {
-        'Content-Type': 'application/json',
-      });
-
-      res.end(JSON.stringify({ message: 'Source is not found' }));
-
-      return;
+      return sendResponseWithError({ response, err: new SourceIsNotFoundError() });
     }
 
     try {
       if (isValidMethod) {
         const id = this._getIdFromUrl(url);
 
-        if (id) {
-          const isValidId = validateUuid(id || '');
-
-          if (!isValidId) {
-            throw new Error('400 bad request');
-          }
-        }
-
-        const result = await this[method](id);
-
-        sendResponseWith({ response: res, statusCode: 200, statusMessage: 'OK', content: result });
+        const result = await this[method](id, request);
+        // @ts-ignore-next-line
+        return sendResponseWithResult({ response, result });
       }
     } catch (error) {
-      // error.statusCode, error.statusMessage, content: error.message
-      res.end(error instanceof Error ? error.message : 'something went wrong');
+      return sendResponseWithError({ response, err: error });
     }
   }
 

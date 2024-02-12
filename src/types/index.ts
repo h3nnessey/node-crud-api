@@ -14,9 +14,20 @@ export interface User {
   hobbies: string[];
 }
 
-export type SendResponseOptions = {
-  response: ServerResponse;
+export type UserToOperation = Omit<User, 'id'>;
+
+export interface UserOperation {
+  data: User | User[];
   statusCode: number;
   statusMessage: string;
-  content: unknown;
-};
+}
+
+export interface SendResponseWithErrorArguments {
+  response: ServerResponse;
+  err: unknown;
+}
+
+export interface SendResponseWIthResultArguments {
+  response: ServerResponse;
+  result: UserOperation;
+}

@@ -1,4 +1,6 @@
-import type { User } from '../types';
+import { validate as validateUuid, v4 as uuidv4 } from 'uuid';
+import type { User, UserOperation, UserToOperation } from '../types';
+import { UserNotFoundError, InvalidIdError, InvalidUserJsonError } from '../utils/errors';
 
 export class UserService {
   private _users: User[] = [
@@ -10,17 +12,64 @@ export class UserService {
     },
   ];
 
-  async getUsers(): Promise<User[]> {
-    return this._users;
+  async getUsers(): Promise<UserOperation> {
+    return {
+      data: this._users,
+      statusCode: 200,
+      statusMessage: 'OK',
+    };
   }
 
-  async getUserById(id: string): Promise<User> {
+  async getUserById(id: string): Promise<UserOperation> {
+    this._validateId(id);
+
     const user = this._users.find((user) => user.id === id);
 
     if (!user) {
-      throw new Error('404 not found');
+      throw new UserNotFoundError();
     }
 
-    return user;
+    return {
+      data: user,
+      statusCode: 200,
+      statusMessage: 'OK',
+    };
+  }
+
+  async createUser(user: UserToOperation): Promise<UserOperation> {
+    this._validateUser(user);
+
+    const createdUser = { ...user, id: uuidv4() };
+
+    this._users.push(createdUser);
+
+    return {
+      data: createdUser,
+      statusCode: 201,
+      statusMessage: 'Created',
+    };
+  }
+
+  private _validateUser(user: UserToOperation) {
+    const isValidKeysCount = Object.keys(user).length === 3;
+    const isValidAge = 'age' in user && typeof user.age === 'number';
+    const isValidHobbies =
+      'hobbies' in user && user.hobbies.every((hobbie) => typeof hobbie === 'string');
+
+    const isValidUser = isValidKeysCount && isValidAge && isValidHobbies;
+
+    if (!isValidUser) {
+      throw new InvalidUserJsonError();
+    }
+
+    return isValidUser;
+  }
+
+  private _validateId(id: string) {
+    const isValidId = validateUuid(id);
+
+    if (!isValidId) {
+      throw new InvalidIdError();
+    }
   }
 }
