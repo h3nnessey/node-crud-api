@@ -1,33 +1,83 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { validate as validateUuid } from 'uuid';
 import { UserService } from '../services';
+import { HttpMethods, User } from '../types';
+import { sendResponseWith } from '../utils';
 
 export class UserController {
-  userService = new UserService();
-  usersRegExp = new RegExp(/^\/api\/users[\/]?$/i);
-  usersUuidRegexp = new RegExp(/^\/api\/users(?:\/([^\/]+?))[\/]?$/i);
+  private readonly _userService = new UserService();
+  private readonly _usersRegExp = new RegExp(/^\/api\/users[\/]?$/i);
+  private readonly _usersUuidRegexp = new RegExp(/^\/api\/users(?:\/([^\/]+?))[\/]?$/i);
 
-  async get() {}
+  private async GET(id: string | null): Promise<User | User[]> {
+    return id ? this._userService.getUserById(id) : this._userService.getUsers();
+  }
 
-  async post() {}
+  private async POST() {}
 
-  async put() {}
+  private async PUT() {}
 
-  async delete() {}
+  private async DELETE() {}
 
-  async _handleRequest(req: IncomingMessage, res: ServerResponse) {
-    // const { method, url = '' } = req;
+  public async handleRequest(req: IncomingMessage, res: ServerResponse) {
+    const { method, url = '' } = req;
+
+    console.log(`${new Date().toLocaleString()} ${method} ${url}`);
+
+    const isValidRoute = this._isValidRoute(url);
+    const isValidMethod = this._isValidMethod(method);
+
+    if (!isValidRoute || !isValidMethod) {
+      res.writeHead(404, 'Not found', {
+        'Content-Type': 'application/json',
+      });
+
+      res.end(JSON.stringify({ message: 'Source is not found' }));
+
+      return;
+    }
 
     try {
-      // await this[method](type of operation: id or not?, req to stream data consuming)
-      // await user service method
-      // send success response
-    } catch (error: unknown) {
-      // ... error from user service or internal
-      // send error response
+      if (isValidMethod) {
+        const id = this._getIdFromUrl(url);
+
+        if (id) {
+          const isValidId = validateUuid(id || '');
+
+          if (!isValidId) {
+            throw new Error('400 bad request');
+          }
+        }
+
+        const result = await this[method](id);
+
+        sendResponseWith({ response: res, statusCode: 200, statusMessage: 'OK', content: result });
+      }
+    } catch (error) {
+      // error.statusCode, error.statusMessage, content: error.message
+      res.end(error instanceof Error ? error.message : 'something went wrong');
     }
   }
 
-  private _getIdFromStringUrl(url: string): string | null {
+  private _isValidRoute(url: string): boolean {
+    return this._usersRegExp.test(url) || this._usersUuidRegexp.test(url);
+  }
+
+  private _isValidMethod(method = ''): method is HttpMethods {
+    switch (method) {
+      case HttpMethods.Delete:
+      case HttpMethods.Get:
+      case HttpMethods.Post:
+      case HttpMethods.Put: {
+        return true;
+      }
+      default: {
+        return false;
+      }
+    }
+  }
+
+  private _getIdFromUrl(url: string): string | null {
     return (
       url
         .split('/')

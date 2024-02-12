@@ -1,8 +1,10 @@
+import type { ServerResponse } from 'node:http';
+
 export enum HttpMethods {
   Get = 'GET',
   Post = 'POST',
-  Put = 'Put',
-  Delete = 'Delete',
+  Put = 'PUT',
+  Delete = 'DELETE',
 }
 
 export interface User {
@@ -11,3 +13,10 @@ export interface User {
   age: number;
   hobbies: string[];
 }
+
+export type SendResponseOptions = {
+  response: ServerResponse;
+  statusCode: number;
+  statusMessage: string;
+  content: unknown;
+};
