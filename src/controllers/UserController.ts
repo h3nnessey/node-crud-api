@@ -1,14 +1,15 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { UserService } from '../services';
+import type { UserService, WorkerUserService } from '../services';
 import { HttpMethods, UserOperation, UserToOperation } from '../types';
 import { BadRequestError, SourceIsNotFoundError } from '../utils/errors';
 import { sendResponseWithError, sendResponseWithResult } from '../utils/response';
 import { readRequestBody } from '../utils/streams';
 
 export class UserController {
-  private readonly _userService = new UserService();
   private readonly _usersRegExp = new RegExp(/^\/api\/users[\/]?$/i);
   private readonly _usersUuidRegexp = new RegExp(/^\/api\/users(?:\/([^\/]+?))[\/]?$/i);
+
+  constructor(private readonly _userService: UserService | WorkerUserService) {}
 
   private async GET(id: string | null): Promise<UserOperation> {
     return id ? this._userService.getUserById(id) : this._userService.getUsers();
