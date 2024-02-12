@@ -7,6 +7,8 @@ export enum HttpMethods {
   Delete = 'DELETE',
 }
 
+// todo: add http codes / messages
+
 export interface User {
   id?: string;
   username: string;

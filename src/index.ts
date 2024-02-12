@@ -1,15 +1,18 @@
-import http from 'node:http';
-import { UserController } from './controllers';
+import { createServer } from 'node:http';
+import cluster from 'node:cluster';
 import 'dotenv/config';
+import { UserController } from './controllers';
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 
-const userController = new UserController();
+if (cluster.isPrimary) {
+  const userController = new UserController();
 
-const server = http.createServer(async (req, res) => {
-  await userController.handleRequest(req, res);
-});
+  const server = createServer(async (request, response) => {
+    await userController.handleRequest(request, response);
+  });
 
-server.listen(PORT, () => {
-  console.log(`Server is listening on port ${PORT}`);
-});
+  server.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+  });
+}

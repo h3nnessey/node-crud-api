@@ -3,14 +3,7 @@ import type { User, UserOperation, UserToOperation } from '../types';
 import { UserNotFoundError, InvalidIdError, InvalidUserJsonError } from '../utils/errors';
 
 export class UserService {
-  private _users: User[] = [
-    {
-      id: 'c5f58192-8867-47a9-88c6-be5b3d63322d',
-      username: 'h3nnessey',
-      age: 27,
-      hobbies: ['qwe', 'asd'],
-    },
-  ];
+  private _users: User[] = [];
 
   async getUsers(): Promise<UserOperation> {
     return {
@@ -83,7 +76,7 @@ export class UserService {
     return {
       data: `User with ID: ${id} has been deleted`,
       statusCode: 204,
-      statusMessage: 'No Content',
+      statusMessage: 'Deleted',
     };
   }
 

@@ -30,14 +30,14 @@ export class UserController {
     return this._userService.updateUser(id, user);
   }
 
-  private async DELETE(id: string | null) {
+  private async DELETE(id: string | null): Promise<UserOperation> {
     if (!id) throw new BadRequestError();
 
     return this._userService.deleteUser(id);
   }
 
   public async handleRequest(request: IncomingMessage, response: ServerResponse) {
-    const { method, url = '' } = request;
+    const { method, url } = request;
 
     console.log(`${new Date().toLocaleString()} ${method} ${url}`);
 
@@ -61,7 +61,7 @@ export class UserController {
     }
   }
 
-  private _isValidRoute(url: string): boolean {
+  private _isValidRoute(url = ''): boolean {
     return this._usersRegExp.test(url) || this._usersUuidRegexp.test(url);
   }
 
@@ -79,11 +79,11 @@ export class UserController {
     }
   }
 
-  private _getIdFromUrl(url: string): string | null {
+  private _getIdFromUrl(url = ''): string | null {
     return (
       url
         .split('/')
-        .filter((c) => !!c)
+        .filter((char) => !!char)
         .at(2) || null
     );
   }
