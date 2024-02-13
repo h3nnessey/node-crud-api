@@ -1,14 +1,13 @@
-import { createServer } from 'node:http';
 import cluster from 'node:cluster';
 import 'dotenv/config';
-import { createWorkerServer, createMasterClusterServer } from './server';
+import { createWorkerServer, createMasterClusterServer, createServer } from './server';
 
 const PORT = Number(process.env.PORT) || 5000;
 
 const isClusterMode = process.env.CLUSTER === 'true';
 
 if (!isClusterMode && cluster.isPrimary) {
-  createServer();
+  createServer(PORT);
 }
 
 if (isClusterMode && cluster.isPrimary) {
