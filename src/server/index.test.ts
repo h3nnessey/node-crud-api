@@ -1,9 +1,8 @@
 import request from 'supertest';
 import { describe, expect, test } from '@jest/globals';
-import { createServer } from './createServer';
 import { validate } from 'uuid';
-import { User } from '../types';
-import { Server } from 'http';
+import { type Server } from 'node:http';
+import { createServer } from './createServer';
 
 describe('Get all records with a GET api/users request (an empty array is expected)', () => {
   const port = 4000;
@@ -23,7 +22,7 @@ describe('Get all records with a GET api/users request (an empty array is expect
     server.close();
   });
 
-  test('Scenario 1', async () => {
+  test('Get all records with a GET api/users request (an empty array is expected)', async () => {
     const response = await request(url).get('/api/users/');
 
     expect(response.body).toStrictEqual([]);
@@ -47,7 +46,7 @@ describe('Get all records with a GET api/users request (an empty array is expect
     expect(responseCreate.type).toBe('application/json');
     expect(validate(id)).toBe(true);
 
-    const responseGet = await request(url).get(`/${id}`);
+    const responseGet = await request(url).get(`/api/users/${id}`);
 
     expect(responseGet.statusCode).toBe(200);
     expect(responseGet.type).toBe('application/json');
